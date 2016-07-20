@@ -1,0 +1,20 @@
+{
+  "name": "trashf/php-veikkaus-api",
+  "description": "PHP client class for Veikkaus REST api",
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Reetu Mönkkönen",
+      "email": "TrashF@taistelumarsu.org"
+    }
+  ],
+  "require": {
+    "php": ">=5.5.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "trashf\\": "src/trashf"
+    }
+  }
+}
