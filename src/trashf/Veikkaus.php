@@ -16,6 +16,11 @@ class Veikkaus {
 	protected static $_instance = null;
 
 	/**
+	 * @var array
+	 */
+	protected $_cookies = array();
+
+	/**
 	 * @var string
 	 */
 	protected $_returnMode = 'objects';
@@ -25,6 +30,9 @@ class Veikkaus {
 	 */
 	public function __clone() {}
 
+	/**
+	 * Veikkaus constructor.
+	 */
 	public function __construct() {
 		spl_autoload_register(function($class) {
 			@include_once __DIR__ . '/../' . str_replace(array('\\', '_'), '/', $class) . '.php';
@@ -59,21 +67,36 @@ class Veikkaus {
 	 * @throws \Exception
 	 */
 	protected function _request($apiMethod, array $params = array(), array $headers = array(), $httpMethod = 'GET') {
-		$ctx = stream_context_create(array(
+		$ctxOptions = array(
 			'http' => array(
 				'method' => $httpMethod,
 				'header' => $this->_getHeaderString($headers),
 				'ignore_errors' => true,
 			)
-		));
-		$apiUrl = $apiMethod;
+		);
 		$paramString = http_build_query($params, null, '&');
+		if ($httpMethod === 'POST') {
+			$ctxOptions['http']['content'] = json_encode($params);
+			$ctxOptions['http']['header'] = $this->_getHeaderString($headers);
+			$paramString = '';
+		}
+		$ctx = stream_context_create($ctxOptions);
+		$apiUrl = $apiMethod;
 		if (!empty($paramString)) {
 			$apiUrl .= ('?' . $paramString);
 		}
 		$response = file_get_contents(Veikkaus::BASE_URL . $apiUrl, false, $ctx);
 		if ($response === false) {
 			throw new \Exception('API call failed.');
+		}
+		if ($apiMethod === 'sessions') {
+			// save session for further use
+			$this->_cookies = array();
+			foreach ($http_response_header as $s) {
+				if (preg_match('|^Set-Cookie:\s*([^=]+)=([^;]+);(.+)$|i', $s, $parts)) {
+					$this->_cookies[$parts[1]] = $parts[2];
+				}
+			}
 		}
 		if (0 === mb_strpos($response, "\x1f" . "\x8b" . "\x08", 0, "US-ASCII")) {
 			$response = gzdecode($response);
@@ -89,6 +112,13 @@ class Veikkaus {
 	protected function _getHeaderString(array $headers) {
 		$headerString = '';
 		$headers = array_merge($this->_requiredHeaders, $headers);
+		if (!empty($this->_cookies)) {
+			$headers['Cookie'] = "";
+			foreach ($this->_cookies as $key => $value) {
+				$headers['Cookie'] .= "{$key}={$value}; ";
+			}
+			$headers['Cookie'] = trim($headers['Cookie']);
+		}
 		foreach ($headers as $name => $value) {
 			$headerString .= "{$name}: $value\r\n";
 		}
@@ -115,11 +145,112 @@ class Veikkaus {
 	}
 
 	/**
+	 * Get multiscore data (Moniveto)
+	 *
 	 * @param array $params
 	 * @return array|string
 	 */
 	public function getMultiscore(array $params = array()) {
 		$params['game-names'] = 'MULTISCORE';
+		return $this->_request('sport-games/draws', $params);
+	}
+
+	/**
+	 * Get score data (Tulosveto)
+	 *
+	 * @param array $params
+	 * @return array|string
+	 */
+	public function getScore(array $params = array()) {
+		$params['game-names'] = 'SCORE';
+		return $this->_request('sport-games/draws', $params);
+	}
+
+	/**
+	 * Get sport data (Vakio)
+	 *
+	 * @param array $params
+	 * @return array|string
+	 */
+	public function getSport(array $params = array()) {
+		$params['game-names'] = 'SPORT';
+		return $this->_request('sport-games/draws', $params);
+	}
+
+	/**
+	 * Get winner data (Voittajaveto)
+	 *
+	 * @param array $params
+	 * @return array|string
+	 */
+	public function getWinner(array $params = array()) {
+		$params['game-names'] = 'WINNER';
+		return $this->_request('sport-games/draws', $params);
+	}
+
+	/**
+	 * Get pick two data (Päivän pari)
+	 *
+	 * @param array $params
+	 * @return array|string
+	 */
+	public function getPickTwo(array $params = array()) {
+		$params['game-names'] = 'PICKTWO';
+		return $this->_request('sport-games/draws', $params);
+	}
+
+	/**
+	 * Get pick three data (Päivän trio)
+	 *
+	 * @param array $params
+	 * @return array|string
+	 */
+	public function getPickThree(array $params = array()) {
+		$params['game-names'] = 'PICKTHREE';
+		return $this->_request('sport-games/draws', $params);
+	}
+
+	/**
+	 * Get Perfecta data (Superkaksari)
+	 *
+	 * @param array $params
+	 * @return array|string
+	 */
+	public function getPerfecta(array $params = array()) {
+		$params['game-names'] = 'PERFECTA';
+		return $this->_request('sport-games/draws', $params);
+	}
+
+	/**
+	 * Get Trifecta data (Supertripla)
+	 *
+	 * @param array $params
+	 * @return array|string
+	 */
+	public function getTrifecta(array $params = array()) {
+		$params['game-names'] = 'TRIFECTA';
+		return $this->_request('sport-games/draws', $params);
+	}
+
+	/**
+	 * Get eBet data (Pitkäveto)
+	 *
+	 * @param array $params
+	 * @return array|string
+	 */
+	public function getEBet(array $params = array()) {
+		$params['game-names'] = 'EBET';
+		return $this->_request('sport-games/draws', $params);
+	}
+
+	/**
+	 * Get Ravi data (Moniveikkaus)
+	 *
+	 * @param array $params
+	 * @return array|string
+	 */
+	public function getRavi(array $params = array()) {
+		$params['game-names'] = 'RAVI';
 		return $this->_request('sport-games/draws', $params);
 	}
 
@@ -177,6 +308,51 @@ class Veikkaus {
 		$end->setTime(23, 0);
 		$rounds = $this->getLottoRounds($start, $end);
 		return empty($rounds) ? null : reset($rounds);
+	}
+
+	/**
+	 * Performs login and returns basic user information.
+	 *
+	 * @param string $login
+	 * @param string $password
+	 * @return array|string
+	 */
+	public function login($login, $password) {
+		return $this->_request(
+			'sessions',
+			array(
+				'type' => 'STANDARD_LOGIN',
+				'login' => $login,
+				'password' => $password
+			),
+			array(),
+			'POST'
+		);
+	}
+
+	/**
+	 * @return array|string
+	 * @throws \Exception
+	 */
+	public function getBalance() {
+		if (empty($this->_cookies)) {
+			throw new \Exception('Trying to use getBalance() before calling login()');
+		}
+		return $this->_request('players/self/account');
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getCookies() {
+		return $this->_cookies;
+	}
+
+	/**
+	 * @param array $cookies
+	 */
+	public function setCookies(array $cookies = array()) {
+		$this->_cookies = $cookies;
 	}
 
 }
