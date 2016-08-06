@@ -7,4 +7,7 @@ Fetching latest Lotto results would be:
 
 `Veikkaus::getInstance()->getLottoRound();`
 
-See `scripts` directory for more usage hints. Currently Lotto and Multiscore (Moniveto) are somewhat implemented, basic support for other games is rather trivial to add by changing game name according to list given in https://github.com/VeikkausOy/sport-games-robot.
+See `scripts` directory for more usage hints. Current features:
+- Querying for Lotto rounds
+- Basic support for sport games described in Veikkaus API examples at https://github.com/VeikkausOy/sport-games-robot
+- Logging in and querying for user balance
